@@ -2,26 +2,21 @@
 '''
 ===============================================================================
 Interactive Image Segmentation using GrabCut algorithm.
-
 This sample shows interactive image segmentation using grabcut algorithm.
-
 USAGE:
     python grabcut.py <filename>
-
 README FIRST:
     Two windows will show up, one for input and one for output.
-
     At first, in input window, draw a rectangle around the object using
 mouse right button. Then press 'n' to segment the object (once or a few times)
 For any finer touch-ups, you can press any of the keys below and draw lines on
 the areas you want. Then again press 'n' for updating the output.
-
 Key '0' - To select areas of sure background
 Key '1' - To select areas of sure foreground
 Key '2' - To select areas of probable background
 Key '3' - To select areas of probable foreground
-
 Key 'n' - To update the segmentation
+Key 'x' - To change mode of drawing (rectangles / touch ups)
 Key 'r' - To reset the setup
 Key 's' - To save the results
 ===============================================================================
@@ -55,12 +50,58 @@ class App():
     rect_or_mask = 100      # flag for selecting rect or mask mode
     value = DRAW_FG         # drawing initialized to FG
     thickness = 3           # brush thickness
+    finer_touch_up = False
 
-    def onmouse(self, event, x, y, flags, param):
-        # Draw Rectangle
-        if event == cv.EVENT_RBUTTONDOWN:
+    # def onmouse(self, event, x, y, flags, param):
+    #     # Draw Rectangle
+    #     if event == cv.EVENT_RBUTTONDOWN:
+    #         self.rectangle = True
+    #         self.ix, self.iy = x,y
+
+    #     elif event == cv.EVENT_MOUSEMOVE:
+    #         if self.rectangle == True:
+    #             self.img = self.img2.copy()
+    #             cv.rectangle(self.img, (self.ix, self.iy), (x, y), self.BLUE, 2)
+    #             self.rect = (min(self.ix, x), min(self.iy, y), abs(self.ix - x), abs(self.iy - y))
+    #             self.rect_or_mask = 0
+
+    #     elif event == cv.EVENT_RBUTTONUP:
+    #         self.rectangle = False
+    #         self.rect_over = True
+    #         cv.rectangle(self.img, (self.ix, self.iy), (x, y), self.BLUE, 2)
+    #         self.rect = (min(self.ix, x), min(self.iy, y), abs(self.ix - x), abs(self.iy - y))
+    #         self.rect_or_mask = 0
+    #         print(" Now press the key 'n' a few times until no further change \n")
+
+    #     # draw touchup curves
+
+    #     if event == cv.EVENT_LBUTTONDOWN:
+    #         if self.rect_over == False:
+    #             print("first draw rectangle \n")
+    #         else:
+    #             self.drawing = True
+    #             cv.circle(self.img, (x,y), self.thickness, self.value['color'], -1)
+    #             cv.circle(self.mask, (x,y), self.thickness, self.value['val'], -1)
+
+    #     elif event == cv.EVENT_MOUSEMOVE:
+    #         if self.drawing == True:
+    #             cv.circle(self.img, (x, y), self.thickness, self.value['color'], -1)
+    #             cv.circle(self.mask, (x, y), self.thickness, self.value['val'], -1)
+
+    #     elif event == cv.EVENT_LBUTTONUP:
+    #         if self.drawing == True:
+    #             self.drawing = False
+    #             cv.circle(self.img, (x, y), self.thickness, self.value['color'], -1)
+    #             cv.circle(self.mask, (x, y), self.thickness, self.value['val'], -1)
+
+
+
+    def draw_rect(self, event, x, y, flags, param):
+    # Draw Rectangle
+        if event == cv.EVENT_LBUTTONDOWN:
             self.rectangle = True
             self.ix, self.iy = x,y
+            self.finer_touch_up = False
 
         elif event == cv.EVENT_MOUSEMOVE:
             if self.rectangle == True:
@@ -69,21 +110,22 @@ class App():
                 self.rect = (min(self.ix, x), min(self.iy, y), abs(self.ix - x), abs(self.iy - y))
                 self.rect_or_mask = 0
 
-        elif event == cv.EVENT_RBUTTONUP:
+        elif event == cv.EVENT_LBUTTONUP:
             self.rectangle = False
             self.rect_over = True
             cv.rectangle(self.img, (self.ix, self.iy), (x, y), self.BLUE, 2)
             self.rect = (min(self.ix, x), min(self.iy, y), abs(self.ix - x), abs(self.iy - y))
             self.rect_or_mask = 0
             print(" Now press the key 'n' a few times until no further change \n")
-
-        # draw touchup curves
-
+            print(" To switch to drawing finer touch ups press x \n")
+    
+    def touch_up(self, event, x, y, flags, param):
         if event == cv.EVENT_LBUTTONDOWN:
             if self.rect_over == False:
                 print("first draw rectangle \n")
             else:
                 self.drawing = True
+                self.finer_touch_up = True
                 cv.circle(self.img, (x,y), self.thickness, self.value['color'], -1)
                 cv.circle(self.mask, (x,y), self.thickness, self.value['val'], -1)
 
@@ -98,14 +140,17 @@ class App():
                 cv.circle(self.img, (x, y), self.thickness, self.value['color'], -1)
                 cv.circle(self.mask, (x, y), self.thickness, self.value['val'], -1)
 
+
+
     def run(self):
         # Loading images
         if len(sys.argv) == 2:
             filename = sys.argv[1] # for drawing purposes
         else:
-            print("No input image given, so loading default image, lena.jpg \n")
+            # print("No input image given, so loading default image, lena.jpg \n")
             print("Correct Usage: python grabcut.py <filename> \n")
-            filename = 'lena.jpg'
+            return
+            # filename = 'lena.jpg'
 
         self.img = cv.imread(cv.samples.findFile(filename))
         self.img2 = self.img.copy()                               # a copy of original image
@@ -115,11 +160,11 @@ class App():
         # input and output windows
         cv.namedWindow('output')
         cv.namedWindow('input')
-        cv.setMouseCallback('input', self.onmouse)
+        cv.setMouseCallback('input', self.draw_rect)
         cv.moveWindow('input', self.img.shape[1]+10,90)
 
         print(" Instructions: \n")
-        print(" Draw a rectangle around the object using right mouse button \n")
+        print(" Draw a rectangle around the object using left mouse button \n")
 
         while(1):
 
@@ -137,9 +182,11 @@ class App():
                 print(" mark foreground regions with left mouse button \n")
                 self.value = self.DRAW_FG
             elif k == ord('2'): # PR_BG drawing
+                print(" mark probable foreground regions with left mouse button \n")
                 self.value = self.DRAW_PR_BG
             elif k == ord('3'): # PR_FG drawing
                 self.value = self.DRAW_PR_FG
+                print(" mark probable background regions with left mouse button \n")
             elif k == ord('s'): # save image
                 bar = np.zeros((self.img.shape[0], 5, 3), np.uint8)
                 res = np.hstack((self.img2, bar, self.img, bar, self.output))
@@ -147,6 +194,7 @@ class App():
                 print(" Result saved as image \n")
             elif k == ord('r'): # reset everything
                 print("resetting \n")
+                cv.setMouseCallback('input', self.draw_rect)
                 self.rect = (0,0,1,1)
                 self.drawing = False
                 self.rectangle = False
@@ -156,9 +204,17 @@ class App():
                 self.img = self.img2.copy()
                 self.mask = np.zeros(self.img.shape[:2], dtype = np.uint8) # mask initialized to PR_BG
                 self.output = np.zeros(self.img.shape, np.uint8)           # output image to be shown
+            elif k == ord('x'):
+                if self.finer_touch_up:
+                    print ("Changed to drawing rectangles \n")
+                    cv.setMouseCallback('input', self.draw_rect)
+                else : 
+                    print ("Changed to drawing finer touch ups \n")
+                    cv.setMouseCallback('input', self.touch_up)
+                
             elif k == ord('n'): # segment the image
                 print(""" For finer touchups, mark foreground and background after pressing keys 0-3
-                and again press 'n' \n""")
+                and again press 'n'  press x to change mode of drawing \n  """)
                 try:
                     if (self.rect_or_mask == 0):         # grabcut with rect
                         bgdmodel = np.zeros((1, 65), np.float64)
